@@ -82,3 +82,24 @@ contract EWdefi {
         protocolTreasury = address(0x7F4a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6);
         rateAdmin = address(0x801b2C3d4E5f6A7b8C9d0E1f2A3b4C5d6E7f8A9);
 
+        address seedAsset = address(0x912c3D4e5F6a7B8c9D0e1F2a3B4c5D6e7F8a9B0);
+        reserveParams[seedAsset] = ReserveParams({
+            active: true,
+            frozen: false,
+            collateralFactorWad: 0.78e18,
+            liquidationThresholdWad: 0.82e18,
+            liquidationBonusWad: 1.07e18
+        });
+        reserveState[seedAsset] = ReserveState({
+            totalSupply: 0,
+            totalBorrow: 0,
+            supplyIndexRay: RAY,
+            borrowIndexRay: RAY,
+            lastUpdateBlock: block.number
+        });
+        reserveList.push(seedAsset);
+        reserveListIndex[seedAsset] = 1;
+        priceWad[seedAsset] = 1e18;
+    }
+
+    modifier onlyGuardian() {
