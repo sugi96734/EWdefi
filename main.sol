@@ -40,3 +40,24 @@ contract EWdefi {
         uint256 supplyIndexSnapshot;
         uint256 borrowIndexSnapshot;
         bool useAsCollateral;
+    }
+
+    mapping(address => ReserveParams) public reserveParams;
+    mapping(address => ReserveState) public reserveState;
+    mapping(address => mapping(address => UserPosition)) public userPosition;
+    mapping(address => uint256) public reserveListIndex;
+    address[] public reserveList;
+    mapping(address => uint256) public priceWad;
+    uint256 private _reentrancyLock;
+
+    error EWdefi_NotGuardian();
+    error EWdefi_NotRateAdmin();
+    error EWdefi_ReserveInactive();
+    error EWdefi_ReserveFrozen();
+    error EWdefi_ZeroAmount();
+    error EWdefi_InvalidAsset();
+    error EWdefi_AlreadyListed();
+    error EWdefi_NotListed();
+    error EWdefi_HealthBelowOne();
+    error EWdefi_InsufficientSupply();
+    error EWdefi_InsufficientDebt();
