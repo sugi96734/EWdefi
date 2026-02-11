@@ -103,3 +103,24 @@ contract EWdefi {
     }
 
     modifier onlyGuardian() {
+        if (msg.sender != poolGuardian) revert EWdefi_NotGuardian();
+        _;
+    }
+
+    modifier onlyRateAdmin() {
+        if (msg.sender != rateAdmin) revert EWdefi_NotRateAdmin();
+        _;
+    }
+
+    modifier whenReserveActive(address asset) {
+        if (!reserveParams[asset].active) revert EWdefi_ReserveInactive();
+        if (reserveParams[asset].frozen) revert EWdefi_ReserveFrozen();
+        _;
+    }
+
+    modifier nonReentrant() {
+        if (_reentrancyLock != 0) revert EWdefi_Reentrancy();
+        _reentrancyLock = 1;
+        _;
+        _reentrancyLock = 0;
+    }
