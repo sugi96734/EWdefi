@@ -145,3 +145,24 @@ contract EWdefi {
         reserveState[asset] = ReserveState({
             totalSupply: 0,
             totalBorrow: 0,
+            supplyIndexRay: RAY,
+            borrowIndexRay: RAY,
+            lastUpdateBlock: block.number
+        });
+        reserveList.push(asset);
+        reserveListIndex[asset] = reserveList.length;
+        emit ReserveListed(asset, collateralFactorWad, liquidationThresholdWad);
+    }
+
+    function setPrice(address asset, uint256 priceWad_) external onlyRateAdmin {
+        if (asset == address(0)) revert EWdefi_InvalidAsset();
+        priceWad[asset] = priceWad_;
+        emit PriceUpdated(asset, priceWad_);
+    }
+
+    function setReserveFrozen(address asset, bool frozen) external onlyGuardian {
+        if (reserveListIndex[asset] == 0) revert EWdefi_NotListed();
+        reserveParams[asset].frozen = frozen;
+        emit ReserveFrozenToggled(asset, frozen);
+    }
+
