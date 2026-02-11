@@ -124,3 +124,24 @@ contract EWdefi {
         _;
         _reentrancyLock = 0;
     }
+
+    function listReserve(
+        address asset,
+        uint256 collateralFactorWad,
+        uint256 liquidationThresholdWad,
+        uint256 liquidationBonusWad
+    ) external onlyGuardian {
+        if (asset == address(0)) revert EWdefi_InvalidAsset();
+        if (reserveListIndex[asset] != 0) revert EWdefi_AlreadyListed();
+        if (collateralFactorWad > liquidationThresholdWad || liquidationBonusWad < WAD) revert EWdefi_InvalidConfig();
+
+        reserveParams[asset] = ReserveParams({
+            active: true,
+            frozen: false,
+            collateralFactorWad: collateralFactorWad,
+            liquidationThresholdWad: liquidationThresholdWad,
+            liquidationBonusWad: liquidationBonusWad
+        });
+        reserveState[asset] = ReserveState({
+            totalSupply: 0,
+            totalBorrow: 0,
