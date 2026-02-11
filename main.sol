@@ -19,3 +19,24 @@ contract EWdefi {
     address public immutable rateAdmin;
 
     struct ReserveParams {
+        bool active;
+        bool frozen;
+        uint256 collateralFactorWad;
+        uint256 liquidationThresholdWad;
+        uint256 liquidationBonusWad;
+    }
+
+    struct ReserveState {
+        uint256 totalSupply;
+        uint256 totalBorrow;
+        uint256 supplyIndexRay;
+        uint256 borrowIndexRay;
+        uint256 lastUpdateBlock;
+    }
+
+    struct UserPosition {
+        uint256 supplyBalance;
+        uint256 borrowBalance;
+        uint256 supplyIndexSnapshot;
+        uint256 borrowIndexSnapshot;
+        bool useAsCollateral;
