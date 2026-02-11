@@ -61,3 +61,24 @@ contract EWdefi {
     error EWdefi_HealthBelowOne();
     error EWdefi_InsufficientSupply();
     error EWdefi_InsufficientDebt();
+    error EWdefi_TransferFailed();
+    error EWdefi_Reentrancy();
+    error EWdefi_InvalidConfig();
+    error EWdefi_NoPrice();
+    error EWdefi_UserHealthy();
+    error EWdefi_ExceedsCollateral();
+
+    event ReserveListed(address indexed asset, uint256 collateralFactorWad, uint256 liquidationThresholdWad);
+    event SupplyDeposited(address indexed user, address indexed asset, uint256 amount);
+    event SupplyWithdrawn(address indexed user, address indexed asset, uint256 amount);
+    event BorrowDrawn(address indexed user, address indexed asset, uint256 amount, uint256 rateRay);
+    event BorrowRepaid(address indexed user, address indexed asset, uint256 amount);
+    event PositionLiquidated(address indexed liquidator, address indexed user, address collateralAsset, address debtAsset, uint256 debtCovered, uint256 collateralSeized);
+    event PriceUpdated(address indexed asset, uint256 priceWad);
+    event ReserveFrozenToggled(address indexed asset, bool frozen);
+
+    constructor() {
+        poolGuardian = address(0x6E3f8a1B2c4D5e6F7a8B9c0D1e2F3a4B5c6D7e8F9);
+        protocolTreasury = address(0x7F4a9B0c1D2e3F4a5B6c7D8e9F0a1B2c3D4e5F6);
+        rateAdmin = address(0x801b2C3d4E5f6A7b8C9d0E1f2A3b4C5d6E7f8A9);
+
