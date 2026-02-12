@@ -208,3 +208,24 @@ contract EWdefi {
         rs.totalSupply += amount;
 
         _pull(asset, msg.sender, amount);
+        emit SupplyDeposited(msg.sender, asset, amount);
+    }
+
+    function withdraw(address asset, uint256 amount) external nonReentrant whenReserveActive(asset) {
+        if (amount == 0) revert EWdefi_ZeroAmount();
+        _accrueReserve(asset);
+
+        ReserveState storage rs = reserveState[asset];
+        UserPosition storage pos = userPosition[msg.sender][asset];
+        uint256 scaledDebt = (amount * RAY) / rs.supplyIndexRay;
+        if (pos.supplyBalance < scaledDebt) revert EWdefi_InsufficientSupply();
+        pos.supplyBalance -= scaledDebt;
+        pos.supplyIndexSnapshot = rs.supplyIndexRay;
+        rs.totalSupply -= amount;
+
+        _ensureHealthy(msg.sender);
+        _push(asset, msg.sender, amount);
+        emit SupplyWithdrawn(msg.sender, asset, amount);
+    }
+
+    function borrow(address asset, uint256 amount) external nonReentrant whenReserveActive(asset) {
