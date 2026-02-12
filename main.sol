@@ -166,3 +166,24 @@ contract EWdefi {
         emit ReserveFrozenToggled(asset, frozen);
     }
 
+    function _accrueReserve(address asset) internal {
+        ReserveState storage rs = reserveState[asset];
+        if (rs.lastUpdateBlock == block.number) return;
+        uint256 totalSupply = rs.totalSupply;
+        uint256 totalBorrow = rs.totalBorrow;
+        if (totalSupply > 0 && totalBorrow > 0) {
+            uint256 utilRay = (totalBorrow * RAY) / totalSupply;
+            uint256 borrowRate = _borrowRateRay(utilRay);
+            uint256 blocksElapsed = block.number - rs.lastUpdateBlock;
+            rs.borrowIndexRay += (rs.borrowIndexRay * borrowRate * blocksElapsed) / (RAY * RAY);
+            uint256 supplyRate = (borrowRate * totalBorrow) / totalSupply;
+            rs.supplyIndexRay += (rs.supplyIndexRay * supplyRate * blocksElapsed) / (RAY * RAY);
+        }
+        rs.lastUpdateBlock = block.number;
+    }
+
+    function _borrowRateRay(uint256 utilRay) internal pure returns (uint256) {
+        if (utilRay <= OPTIMAL_UTIL_RAY) {
+            return BASE_RATE_RAY + (utilRay * RATE_SLOPE_1_RAY) / OPTIMAL_UTIL_RAY;
+        }
+        uint256 excess = utilRay - OPTIMAL_UTIL_RAY;
