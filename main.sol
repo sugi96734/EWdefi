@@ -250,3 +250,24 @@ contract EWdefi {
     function repay(address asset, uint256 amount) external nonReentrant whenReserveActive(asset) {
         if (amount == 0) revert EWdefi_ZeroAmount();
         _accrueReserve(asset);
+
+        ReserveState storage rs = reserveState[asset];
+        UserPosition storage pos = userPosition[msg.sender][asset];
+        uint256 debtScaled = pos.borrowBalance;
+        uint256 debtRaw = (debtScaled * rs.borrowIndexRay) / RAY;
+        if (debtRaw == 0) revert EWdefi_InsufficientDebt();
+        uint256 pay = amount > debtRaw ? debtRaw : amount;
+        uint256 payScaled = (pay * RAY) / rs.borrowIndexRay;
+        pos.borrowBalance -= payScaled;
+        pos.borrowIndexSnapshot = rs.borrowIndexRay;
+        rs.totalBorrow -= pay;
+
+        _pull(asset, msg.sender, pay);
+        emit BorrowRepaid(msg.sender, asset, pay);
+    }
+
+    function liquidate(address collateralAsset, address debtAsset, address user, uint256 debtToCover) external nonReentrant whenReserveActive(collateralAsset) whenReserveActive(debtAsset) {
+        if (debtToCover == 0) revert EWdefi_ZeroAmount();
+        if (_healthFactorWad(user) >= MIN_HEALTH_WAD) revert EWdefi_UserHealthy();
+        if (priceWad[collateralAsset] == 0 || priceWad[debtAsset] == 0) revert EWdefi_NoPrice();
+
