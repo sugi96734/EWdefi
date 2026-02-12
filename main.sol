@@ -313,3 +313,24 @@ contract EWdefi {
         for (uint256 i = 0; i < reserveList.length; i++) {
             address asset = reserveList[i];
             ReserveParams storage rp = reserveParams[asset];
+            ReserveState storage rs = reserveState[asset];
+            UserPosition storage pos = userPosition[user][asset];
+            uint256 p = priceWad[asset];
+            if (p == 0) continue;
+            if (pos.useAsCollateral && pos.supplyBalance > 0 && rp.active) {
+                uint256 raw = (pos.supplyBalance * rs.supplyIndexRay) / RAY;
+                collateralEth += (raw * p * rp.collateralFactorWad) / (WAD * WAD);
+            }
+            if (pos.borrowBalance > 0) {
+                uint256 raw = (pos.borrowBalance * rs.borrowIndexRay) / RAY;
+                debtEth += (raw * p) / WAD;
+            }
+        }
+    }
+
+    function _pull(address asset, address from, uint256 amount) internal {
+        (bool ok,) = asset.call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
+        if (!ok) revert EWdefi_TransferFailed();
+    }
+
+    function _push(address asset, address to, uint256 amount) internal {
