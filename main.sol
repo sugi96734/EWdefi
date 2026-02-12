@@ -229,3 +229,24 @@ contract EWdefi {
     }
 
     function borrow(address asset, uint256 amount) external nonReentrant whenReserveActive(asset) {
+        if (amount == 0) revert EWdefi_ZeroAmount();
+        if (priceWad[asset] == 0) revert EWdefi_NoPrice();
+        _accrueReserve(asset);
+
+        ReserveState storage rs = reserveState[asset];
+        uint256 rateRay = _borrowRateRay((rs.totalBorrow * RAY) / (rs.totalSupply == 0 ? 1 : rs.totalSupply));
+        UserPosition storage pos = userPosition[msg.sender][asset];
+        if (pos.borrowIndexSnapshot == 0) pos.borrowIndexSnapshot = rs.borrowIndexRay;
+        uint256 scaled = (amount * RAY) / rs.borrowIndexRay;
+        pos.borrowBalance += scaled;
+        pos.borrowIndexSnapshot = rs.borrowIndexRay;
+        rs.totalBorrow += amount;
+
+        _ensureHealthy(msg.sender);
+        _push(asset, msg.sender, amount);
+        emit BorrowDrawn(msg.sender, asset, amount, rateRay);
+    }
+
+    function repay(address asset, uint256 amount) external nonReentrant whenReserveActive(asset) {
+        if (amount == 0) revert EWdefi_ZeroAmount();
+        _accrueReserve(asset);
