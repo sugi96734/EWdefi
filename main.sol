@@ -292,3 +292,24 @@ contract EWdefi {
         uint256 colRaw = (colPos.supplyBalance * rsCol.supplyIndexRay) / RAY;
         if (collateralSeized > colRaw) revert EWdefi_ExceedsCollateral();
         colPos.supplyBalance -= (collateralSeized * RAY) / rsCol.supplyIndexRay;
+        colPos.supplyIndexSnapshot = rsCol.supplyIndexRay;
+        rsCol.totalSupply -= collateralSeized;
+
+        _push(collateralAsset, msg.sender, collateralSeized);
+        emit PositionLiquidated(msg.sender, user, collateralAsset, debtAsset, cover, collateralSeized);
+    }
+
+    function _ensureHealthy(address user) internal view {
+        if (_healthFactorWad(user) < MIN_HEALTH_WAD) revert EWdefi_HealthBelowOne();
+    }
+
+    function _healthFactorWad(address user) internal view returns (uint256) {
+        (uint256 collateralEth, uint256 debtEth) = _accountData(user);
+        if (debtEth == 0) return type(uint256).max;
+        return (collateralEth * WAD) / debtEth;
+    }
+
+    function _accountData(address user) internal view returns (uint256 collateralEth, uint256 debtEth) {
+        for (uint256 i = 0; i < reserveList.length; i++) {
+            address asset = reserveList[i];
+            ReserveParams storage rp = reserveParams[asset];
