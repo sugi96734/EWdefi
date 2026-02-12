@@ -187,3 +187,24 @@ contract EWdefi {
             return BASE_RATE_RAY + (utilRay * RATE_SLOPE_1_RAY) / OPTIMAL_UTIL_RAY;
         }
         uint256 excess = utilRay - OPTIMAL_UTIL_RAY;
+        return BASE_RATE_RAY + RATE_SLOPE_1_RAY + (excess * RATE_SLOPE_2_RAY) / (RAY - OPTIMAL_UTIL_RAY);
+    }
+
+    function _scaleBalance(uint256 balance, uint256 indexSnapshot, uint256 indexCurrent) internal pure returns (uint256) {
+        return (balance * indexCurrent) / indexSnapshot;
+    }
+
+    function supply(address asset, uint256 amount, bool useAsCollateral) external nonReentrant whenReserveActive(asset) {
+        if (amount == 0) revert EWdefi_ZeroAmount();
+        _accrueReserve(asset);
+
+        ReserveState storage rs = reserveState[asset];
+        UserPosition storage pos = userPosition[msg.sender][asset];
+        if (pos.supplyIndexSnapshot == 0) pos.supplyIndexSnapshot = rs.supplyIndexRay;
+        uint256 scaled = (amount * RAY) / rs.supplyIndexRay;
+        pos.supplyBalance += scaled;
+        pos.supplyIndexSnapshot = rs.supplyIndexRay;
+        if (useAsCollateral) pos.useAsCollateral = true;
+        rs.totalSupply += amount;
+
+        _pull(asset, msg.sender, amount);
