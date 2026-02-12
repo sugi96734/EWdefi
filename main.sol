@@ -271,3 +271,24 @@ contract EWdefi {
         if (_healthFactorWad(user) >= MIN_HEALTH_WAD) revert EWdefi_UserHealthy();
         if (priceWad[collateralAsset] == 0 || priceWad[debtAsset] == 0) revert EWdefi_NoPrice();
 
+        _accrueReserve(collateralAsset);
+        _accrueReserve(debtAsset);
+
+        ReserveState storage rsDebt = reserveState[debtAsset];
+        UserPosition storage debtPos = userPosition[user][debtAsset];
+        uint256 userDebtRaw = (debtPos.borrowBalance * rsDebt.borrowIndexRay) / RAY;
+        if (userDebtRaw == 0) revert EWdefi_InsufficientDebt();
+        uint256 cover = debtToCover > userDebtRaw ? userDebtRaw : debtToCover;
+
+        _pull(debtAsset, msg.sender, cover);
+        debtPos.borrowBalance -= (cover * RAY) / rsDebt.borrowIndexRay;
+        debtPos.borrowIndexSnapshot = rsDebt.borrowIndexRay;
+        rsDebt.totalBorrow -= cover;
+
+        ReserveParams storage rpCol = reserveParams[collateralAsset];
+        uint256 collateralSeized = (cover * priceWad[debtAsset] * rpCol.liquidationBonusWad) / (priceWad[collateralAsset] * WAD);
+        UserPosition storage colPos = userPosition[user][collateralAsset];
+        ReserveState storage rsCol = reserveState[collateralAsset];
+        uint256 colRaw = (colPos.supplyBalance * rsCol.supplyIndexRay) / RAY;
+        if (collateralSeized > colRaw) revert EWdefi_ExceedsCollateral();
+        colPos.supplyBalance -= (collateralSeized * RAY) / rsCol.supplyIndexRay;
